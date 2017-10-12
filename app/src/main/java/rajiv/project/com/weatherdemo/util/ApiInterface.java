@@ -1,4 +1,4 @@
-package rajiv.project.com.weatherdemo;
+package rajiv.project.com.weatherdemo.util;
 
 import rajiv.project.com.weatherdemo.pojo.WeatherData;
 import retrofit2.Call;

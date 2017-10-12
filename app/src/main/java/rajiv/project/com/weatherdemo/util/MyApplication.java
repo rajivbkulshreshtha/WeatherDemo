@@ -1,7 +1,8 @@
-package rajiv.project.com.weatherdemo;
+package rajiv.project.com.weatherdemo.util;
 
 import android.app.Application;
 
+import rajiv.project.com.weatherdemo.R;
 import uk.co.chrisjenx.calligraphy.CalligraphyConfig;
 
 /**

@@ -1,4 +1,4 @@
-package rajiv.project.com.weatherdemo;
+package rajiv.project.com.weatherdemo.util;
 
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;

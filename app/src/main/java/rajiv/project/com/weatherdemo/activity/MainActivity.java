@@ -36,13 +36,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-import rajiv.project.com.weatherdemo.ApiClient;
-import rajiv.project.com.weatherdemo.ApiInterface;
-import rajiv.project.com.weatherdemo.Constants;
 import rajiv.project.com.weatherdemo.R;
 import rajiv.project.com.weatherdemo.adapter.MainAdapter;
 import rajiv.project.com.weatherdemo.pojo.WeatherData;
 import rajiv.project.com.weatherdemo.singleton.VolleySingleton;
+import rajiv.project.com.weatherdemo.util.ApiClient;
+import rajiv.project.com.weatherdemo.util.ApiInterface;
+import rajiv.project.com.weatherdemo.util.Constants;
 import retrofit2.Call;
 import retrofit2.Callback;
 import uk.co.chrisjenx.calligraphy.CalligraphyContextWrapper;
@@ -78,8 +78,6 @@ public class MainActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //initRecyclerView();
-
 
         nodataImageView = (ImageView) findViewById(R.id.nodataImageView);
         searchImageView = (ImageView) findViewById(R.id.searchImageView);
@@ -102,7 +100,7 @@ public class MainActivity extends AppCompatActivity implements
                 .setFastestInterval(1 * 1000); // 1 second, in milliseconds
 
 
-        //permissionChecks();
+        permissionChecks();
 
         //fetchWeatherByName("Mumbai,IN");
 
@@ -133,15 +131,12 @@ public class MainActivity extends AppCompatActivity implements
                     public void onResponse(String response) {
 
                         weatherData = new Gson().fromJson(response, WeatherData.class);
-                        Log.d("ABC", weatherData.getCod());
-
                         if (weatherData != null) {
 
                             for (rajiv.project.com.weatherdemo.pojo.List day : weatherData.getList()) {
 
                                 java.util.Date time = new java.util.Date((long) day.getDt());
                                 String[] text = time.toString().split(" ");
-                                Log.d("QQd", text[2]);
                                 if (!daySet.contains(text[2])) {
                                     daySet.add(text[2]);
                                     dayList.add(day);
@@ -158,7 +153,6 @@ public class MainActivity extends AppCompatActivity implements
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Log.d("GRES", error.toString());
                     }
                 }) {
 
@@ -211,7 +205,6 @@ public class MainActivity extends AppCompatActivity implements
 
             @Override
             public void onFailure(Call<WeatherData> call, Throwable t) {
-                Log.d("QQQQQ", "Some error: " + t.getMessage());
             }
         });
 
@@ -228,8 +221,6 @@ public class MainActivity extends AppCompatActivity implements
 
 
                         weatherData = new Gson().fromJson(response, WeatherData.class);
-                        Log.d("ABC", weatherData.getCod());
-                        Log.d("WWW", weatherData.getList().get(0).getDtTxt());
 
                         if (weatherData != null) {
                             //initRecyclerView();
@@ -241,7 +232,6 @@ public class MainActivity extends AppCompatActivity implements
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Log.d("GRES", error.toString());
                     }
                 }) {
 
@@ -275,9 +265,15 @@ public class MainActivity extends AppCompatActivity implements
 
             }
         } else {
-            lastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-            currentLatitude = lastLocation.getLatitude();
-            currentLongitude = lastLocation.getLongitude();
+            try{
+
+                lastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+                currentLatitude = lastLocation.getLatitude();
+                currentLongitude = lastLocation.getLongitude();
+
+            }catch (Exception e){
+
+            }
 
 
         }
@@ -285,8 +281,31 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        if (requestCode == REQUEST_LOCATION) {
+
+        switch (requestCode) {
+            case REQUEST_LOCATION: {
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    //mContactList = ContactFetcher.getInstance(this).fetchAll();
+                    //initContactRecyclerView();
+
+                    setLocation();
+
+
+                }
+            }
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        }
+
+
+
+
+       /* if (requestCode == REQUEST_LOCATION) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d("asd", "onRequestPermissionsResult: "+permissions[0]);
                 setLocation();
 
             } else {
@@ -294,8 +313,38 @@ public class MainActivity extends AppCompatActivity implements
             }
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        }
+        }*/
     }
+
+
+    /*@Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case Constant.PERMISSION_READ_CODE: {
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    mContactList = ContactFetcher.getInstance(this).fetchAll();
+                    initContactRecyclerView();
+
+                } else {
+
+                    Snackbar snackbar = Snackbar
+                            .make(linearLayout, "Permission required", Snackbar.LENGTH_LONG)
+                            .setAction("Try Again", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View view) {
+                                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.READ_CONTACTS}, Constant.PERMISSION_READ_CODE);
+                                }
+                            });
+
+                    snackbar.show();
+                }
+                return;
+            }
+        }
+    }*/
 
 
     private void setLocation() {
@@ -304,7 +353,6 @@ public class MainActivity extends AppCompatActivity implements
         permissionChecks();
         lastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
         if (lastLocation != null) {
-
 
             currentLatitude = lastLocation.getLatitude();
             currentLongitude = lastLocation.getLongitude();
@@ -321,7 +369,6 @@ public class MainActivity extends AppCompatActivity implements
                 if (cityName != null && countryName != null) {
                     retroFetch(cityName + "," + countryName);
                 }
-
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -357,7 +404,6 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
-
         if (connectionResult.hasResolution()) {
             try {
                 connectionResult.startResolutionForResult(this, CONNECTION_FAILURE_RESOLUTION_REQUEST);

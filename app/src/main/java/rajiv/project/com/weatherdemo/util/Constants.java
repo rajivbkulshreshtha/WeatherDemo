@@ -1,4 +1,4 @@
-package rajiv.project.com.weatherdemo;
+package rajiv.project.com.weatherdemo.util;
 
 /**
  * Created by SUJAN on 12-Oct-17.

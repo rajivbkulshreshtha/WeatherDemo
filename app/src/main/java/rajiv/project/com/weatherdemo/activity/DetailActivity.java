@@ -18,9 +18,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
-import rajiv.project.com.weatherdemo.ApiClient;
-import rajiv.project.com.weatherdemo.ApiInterface;
-import rajiv.project.com.weatherdemo.Constants;
+import rajiv.project.com.weatherdemo.util.ApiClient;
+import rajiv.project.com.weatherdemo.util.ApiInterface;
+import rajiv.project.com.weatherdemo.util.Constants;
 import rajiv.project.com.weatherdemo.R;
 import rajiv.project.com.weatherdemo.adapter.DetailAdapter;
 import rajiv.project.com.weatherdemo.pojo.List;
