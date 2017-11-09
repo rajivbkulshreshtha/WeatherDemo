@@ -5,6 +5,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.util.Collections;
@@ -14,6 +15,7 @@ import rajiv.project.com.weatherdemo.pojo.List;
 import rajiv.project.com.weatherdemo.pojo.Main;
 import rajiv.project.com.weatherdemo.pojo.Weather;
 import rajiv.project.com.weatherdemo.pojo.WeatherData;
+import rajiv.project.com.weatherdemo.util.Constants;
 
 /**
  * Created by SUJAN on 12-Oct-17.
@@ -22,13 +24,13 @@ import rajiv.project.com.weatherdemo.pojo.WeatherData;
 public class DetailAdapter extends RecyclerView.Adapter<DetailAdapter.DetailViewHolder> {
 
     private Context mContext;
-    private LayoutInflater layoutInflater;
+    private LayoutInflater mLayoutInflater;
     private WeatherData weatherData;
     private java.util.List<List> dayList = Collections.EMPTY_LIST;
 
     public DetailAdapter(Context mContext, WeatherData weatherData, java.util.List<List> dayList) {
         this.mContext = mContext;
-        layoutInflater = LayoutInflater.from(this.mContext);
+        this.mLayoutInflater = LayoutInflater.from(mContext);
         this.dayList = dayList;
         this.weatherData = weatherData;
 
@@ -36,7 +38,7 @@ public class DetailAdapter extends RecyclerView.Adapter<DetailAdapter.DetailView
 
     @Override
     public DetailAdapter.DetailViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = layoutInflater.inflate(R.layout.adapter_detail, parent, false);
+        View view = mLayoutInflater.inflate(R.layout.adapter_detail, parent, false);
         return new DetailAdapter.DetailViewHolder(view);
     }
 
@@ -44,75 +46,30 @@ public class DetailAdapter extends RecyclerView.Adapter<DetailAdapter.DetailView
     public void onBindViewHolder(DetailAdapter.DetailViewHolder holder, int position) {
 
 
-        final Weather weather_ = dayList.get(position).getWeather().get(0);
-        final Main temperature = dayList.get(position).getMain();
+        final Weather finalWeather = dayList.get(position).getWeather().get(0);
+        final Main finalTemperature = dayList.get(position).getMain();
         holder.placeNameTextView.setText(weatherData.getCity().getName() + " , " + weatherData.getCity().getCountry());
-        //holder.descriptionTextView.setText(weather_.getDescription().toUpperCase());
+
+        holder.descriptionTextView.setText(finalWeather.getDescription().toUpperCase());
 
         //Convert temp to fahrenheit
-        double temp = temperature.getTemp();
-        temp = temp * (9.0 / 5) - 459.67;
-        String tempConv = String.format("%.0f", temp);
-        holder.currentTempTextView.setText(tempConv + "˚");
+        double currentTemp = Constants.getTemp(mContext, finalTemperature.getTemp());
+        double highestTemp = Constants.getTemp(mContext, finalTemperature.getTempMax());
+        double lowestTemp = Constants.getTemp(mContext, finalTemperature.getTempMin());
 
-        holder.view.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-            }
-        });
-
-       /* switch (weather_.getIcon()) {
-            case "01d":
-                holder.iconTextView.setText(R.string.wi_day_sunny);
-                break;
-            case "02d":
-                holder.iconTextView.setText(R.string.wi_cloudy_gusts);
-                break;
-            case "03d":
-                holder.iconTextView.setText(R.string.wi_cloud_down);
-                break;
-            case "04d":
-                holder.iconTextView.setText(R.string.wi_cloudy);
-                break;
-            case "04n":
-                holder.iconTextView.setText(R.string.wi_night_cloudy);
-                break;
-            case "10d":
-                holder.iconTextView.setText(R.string.wi_day_rain_mix);
-                break;
-            case "11d":
-                holder.iconTextView.setText(R.string.wi_day_thunderstorm);
-                break;
-            case "13d":
-                holder.iconTextView.setText(R.string.wi_day_snow);
-                break;
-            case "01n":
-                holder.iconTextView.setText(R.string.wi_night_clear);
-                break;
-            case "02n":
-                holder.iconTextView.setText(R.string.wi_night_cloudy);
-                break;
-            case "03n":
-                holder.iconTextView.setText(R.string.wi_night_cloudy_gusts);
-                break;
-            case "10n":
-                holder.iconTextView.setText(R.string.wi_night_cloudy_gusts);
-                break;
-            case "11n":
-                holder.iconTextView.setText(R.string.wi_night_rain);
-                break;
-            case "13n":
-                holder.iconTextView.setText(R.string.wi_night_snow);
-                break;
-        }*/
+        holder.currentTempTextView.setText(String.format("%.0f˚ ", currentTemp));
+        holder.highestTempTextView.setText(String.format("%.0f˚ ", highestTemp));
+        holder.lowestTempTextView.setText(String.format("%.0f˚ ", lowestTemp));
 
 
-//            holder.dateTextView.setText(weatherData.getListData().get(position).getDtTxt().substring(0, 2));
+        String[] dateArray = dayList.get(position).getDtTxt().split(" ");
+        final String date = dateArray[0].trim();
+        final String time = dateArray[1].trim();
+        holder.dtTextView.setText(time.substring(0, 5));
+        holder.imageView.setImageResource(Constants.getImage(finalWeather.getIcon()));
 
-
-        // holder.view.setVisibility(View.GONE);
-
+        holder.windTextView.setText(String.format("%.2f km/h", dayList.get(position).getWind().getSpeed()));
+        holder.humidTextView.setText(String.format("%d %%", finalTemperature.getHumidity()));
 
     }
 
@@ -125,22 +82,26 @@ public class DetailAdapter extends RecyclerView.Adapter<DetailAdapter.DetailView
     public class DetailViewHolder extends RecyclerView.ViewHolder {
 
         View view;
-        TextView dateTextView, timeTextView, placeNameTextView, descriptionTextView, currentTempTextView, iconTextView;
-        //ImageView tempImageView;
+        ImageView imageView;
+        TextView placeNameTextView, dtTextView, descriptionTextView, currentTempTextView,
+                highestTempTextView, lowestTempTextView, windTextView, humidTextView;
+
 
         public DetailViewHolder(View itemView) {
             super(itemView);
 
             view = itemView;
 
-            // dateTextView = (TextView) view.findViewById(R.id.adapter_date);
-            //timeTextView = (TextView) view.findViewById(R.id.adapter_time);
-            placeNameTextView = (TextView) view.findViewById(R.id.city_text);
-            //descriptionTextView = (TextView) view.findViewById(R.id.adapter_description);
-            currentTempTextView = (TextView) view.findViewById(R.id.temp_text);
-            iconTextView = (TextView) view.findViewById(R.id.adapter_iconTextView);
+            placeNameTextView = (TextView) view.findViewById(R.id.adapter_detail_location_textView);
+            dtTextView = (TextView) view.findViewById(R.id.adapter_detail_dt_textView);
+            descriptionTextView = (TextView) view.findViewById(R.id.adapter_detail_description);
+            currentTempTextView = (TextView) view.findViewById(R.id.adapter_detail_currentTemp_textView);
+            highestTempTextView = (TextView) view.findViewById(R.id.adapter_detail_highest_temp);
+            lowestTempTextView = (TextView) view.findViewById(R.id.adapter_detail_lowest_temp);
+            windTextView = (TextView) view.findViewById(R.id.adapter_detail_wind_speed);
+            humidTextView = (TextView) view.findViewById(R.id.adapter_detail_humid);
 
-            //tempImageView = (ImageView) view.findViewById(R.id.adapter_imageView);
+            imageView = (ImageView) view.findViewById(R.id.adapter_detail_imageView);
 
         }
     }

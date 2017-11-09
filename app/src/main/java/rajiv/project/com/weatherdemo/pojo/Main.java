@@ -6,8 +6,8 @@ package rajiv.project.com.weatherdemo.pojo;
 public class Main {
 
     private Double temp;
-    private Double tempMin;
-    private Double tempMax;
+    private Double temp_min;
+    private Double temp_max;
     private Double pressure;
     private Double seaLevel;
     private Double grndLevel;
@@ -35,37 +35,37 @@ public class Main {
     /**
      *
      * @return
-     * The tempMin
+     * The temp_min
      */
     public Double getTempMin() {
-        return tempMin;
+        return temp_min;
     }
 
     /**
      *
-     * @param tempMin
+     * @param temp_min
      * The temp_min
      */
-    public void setTempMin(Double tempMin) {
-        this.tempMin = tempMin;
+    public void setTempMin(Double temp_min) {
+        this.temp_min = temp_min;
     }
 
     /**
      *
      * @return
-     * The tempMax
+     * The temp_max
      */
     public Double getTempMax() {
-        return tempMax;
+        return temp_max;
     }
 
     /**
      *
-     * @param tempMax
+     * @param temp_max
      * The temp_max
      */
-    public void setTempMax(Double tempMax) {
-        this.tempMax = tempMax;
+    public void setTempMax(Double temp_max) {
+        this.temp_max = temp_max;
     }
 
     /**
