@@ -4,4 +4,4 @@
 4. Uses user's GPS information to get latitude and longitude.
 5. The user can also search for specific city weather.
 
-![GIF NAME](http://i.imgur.com/OUkLi.gif)
+![](https://media.giphy.com/media/xUNd9JG92HhT7C0sV2/giphy.gif)
