@@ -4,7 +4,7 @@
 5. The user can also search for specific city weather.
 6. Contains local Sqlite DB with information of above 7000 city for search suggestion. 
 7. Last search is also saved to suggest while searching for cities. 
-8. New Matrial Layout
+8. New Matrial Layout.
 
 
 ![](https://media.giphy.com/media/26FeVfhSCN5XOv5Xq/giphy.gif)
