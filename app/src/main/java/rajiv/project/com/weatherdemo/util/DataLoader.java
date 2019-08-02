@@ -2,6 +2,7 @@ package rajiv.project.com.weatherdemo.util;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.util.Log;
 
 import br.com.mauker.materialsearchview.MaterialSearchView;
 
@@ -14,6 +15,7 @@ public class DataLoader extends android.support.v4.content.AsyncTaskLoader<Strin
     private static int count;
     private LocalDbHelper localDbHelper;
     private MaterialSearchView materialSearchView;
+    private static final String TAG = "DataLoader";
 
     public DataLoader(Context context, LocalDbHelper localDbHelper, MaterialSearchView materialSearchView) {
         super(context);
@@ -31,15 +33,23 @@ public class DataLoader extends android.support.v4.content.AsyncTaskLoader<Strin
     @Override
     public String loadInBackground() {
 
-        if (localDbHelper != null) {
+       try{
 
-            if (localDbHelper.getMyDataBase() != null) {
+           if (localDbHelper != null) {
 
-                Cursor cursor = localDbHelper.getMyDataBase().query("LOCATION_DB", new String[]{"city", "iso2"}, null, null, null, null, null);
-                getListProduct(cursor);
-            }
-        }
+               if (localDbHelper.getMyDataBase() != null) {
+
+                   Cursor cursor = localDbHelper.getMyDataBase().query("LOCATION_DB", new String[]{"city", "iso2"}, null, null, null, null, null);
+                   getListProduct(cursor);
+               }
+           }
+           return "";
+
+       }catch (Exception e){
+           Log.d(TAG, "loadInBackground: ");
+       }
         return "";
+
     }
 
     @Override
@@ -47,7 +57,7 @@ public class DataLoader extends android.support.v4.content.AsyncTaskLoader<Strin
         super.deliverResult(data);
     }
 
-    public void getListProduct(Cursor cursor) {
+    private void getListProduct(Cursor cursor) {
 
         int index_city = cursor.getColumnIndex("city");
         int index_county = cursor.getColumnIndex("iso2");

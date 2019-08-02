@@ -35,7 +35,7 @@ public class LocalDbHelper extends SQLiteOpenHelper {
         }
     }
 
-    public SQLiteDatabase getMyDataBase() {
+    SQLiteDatabase getMyDataBase() {
 
         boolean dbexist = checkDatabase();
         if (dbexist) {
@@ -58,7 +58,7 @@ public class LocalDbHelper extends SQLiteOpenHelper {
         this.myDataBase = myDataBase;
     }
 
-    public void createdatabase() throws IOException {
+    private void createdatabase() throws IOException {
         boolean dbexist = checkDatabase();
         if (dbexist) {
         } else {
@@ -99,7 +99,7 @@ public class LocalDbHelper extends SQLiteOpenHelper {
         myinput.close();
     }
 
-    public void openDatabase() throws SQLException {
+    private void openDatabase() throws SQLException {
 
         String mypath = DB_PATH + DB_NAME;
         myDataBase = SQLiteDatabase.openDatabase(mypath, null, SQLiteDatabase.OPEN_READWRITE);
@@ -116,11 +116,9 @@ public class LocalDbHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
-
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
-
     }
 }

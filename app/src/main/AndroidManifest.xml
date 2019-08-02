@@ -35,7 +35,6 @@
             android:exported="false"
             android:protectionLevel="signature"
             android:syncable="true" />
-        w
     </application>
 
 </manifest>

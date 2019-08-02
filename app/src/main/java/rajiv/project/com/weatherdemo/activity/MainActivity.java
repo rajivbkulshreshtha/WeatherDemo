@@ -1,11 +1,16 @@
 package rajiv.project.com.weatherdemo.activity;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -20,8 +25,8 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
-
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
@@ -46,6 +51,12 @@ import java.util.Locale;
 import java.util.Set;
 
 import br.com.mauker.materialsearchview.MaterialSearchView;
+import io.reactivex.Single;
+import io.reactivex.SingleObserver;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
+import pl.charmas.android.reactivelocation2.ReactiveLocationProvider;
 import rajiv.project.com.weatherdemo.R;
 import rajiv.project.com.weatherdemo.adapter.MainAdapter;
 import rajiv.project.com.weatherdemo.pojo.WeatherData;
@@ -63,6 +74,7 @@ public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,
         LocationListener {
 
+    public static final String TAG = "MainActivity";
 
     private Location lastLocation;
     private GoogleApiClient mGoogleApiClient;
@@ -91,7 +103,10 @@ public class MainActivity extends AppCompatActivity implements
     private TextView currentLocationTextView, currentDateTextView, currentClimateNameTextView,
             currentTempTextView, currentHighestTempTextView, currentLowestTempTextView, currentWindSpeedTextView, currentHumidTextView;
 
+    private CompositeDisposable bag = new CompositeDisposable();
     private boolean course_location, fine_location, external_file;
+
+    private Dialog dialog = null;
 
     private LoaderManager.LoaderCallbacks<String> loaderCallbacks = new LoaderManager.LoaderCallbacks<String>() {
         @Override
@@ -118,7 +133,9 @@ public class MainActivity extends AppCompatActivity implements
         fine_location = userSharedPreferences.getBoolean(Constants.PER_FINE_LOCATION, false);
         external_file = userSharedPreferences.getBoolean(Constants.PER_EXTERNAL_FILE, false);
 
+        //if permissions are not accepted then just show search functionality
         if (!course_location && !fine_location) {
+            //layout that indicate user for search base weather results
             ((LinearLayout) currentView.findViewById(R.id.layout_current_climate_no_currentData_layout)).setVisibility(View.VISIBLE);
 
         }
@@ -147,7 +164,7 @@ public class MainActivity extends AppCompatActivity implements
         setSupportActionBar(toolbar);
         noDataImageView = (ImageView) findViewById(R.id.nodataImageView);
         dayRecyclerView = (RecyclerView) findViewById(R.id.activity_main_recyclerView);
-
+        dayRecyclerView.setNestedScrollingEnabled(false);
         initSearchView();
         initCurrentView();
     }
@@ -160,6 +177,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void initSearchView() {
+        //For search base weather results
 
         searchView = (MaterialSearchView) findViewById(R.id.search_view);
 
@@ -168,10 +186,13 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public boolean onQueryTextSubmit(String query) {
                 if (query.equals("")) {
+                    //if search query is empty the show the toast for it
                     Toast.makeText(MainActivity.this, "Please add City name", Toast.LENGTH_SHORT).show();
                     return true;
 
                 } else {
+                    //Fetch weather results based on searched text
+                    showProgressDialog(MainActivity.this);
                     retroFetch(query);
                     return false;
 
@@ -197,11 +218,14 @@ public class MainActivity extends AppCompatActivity implements
         searchView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                //if user select the suggested query
                 String suggestion = searchView.getSuggestionAtPosition(position);
                 if (suggestion.equals("")) {
                     Toast.makeText(MainActivity.this, "Please add City name", Toast.LENGTH_SHORT).show();
                     searchView.setQuery(suggestion, false);
                 } else {
+                    //Search based on suggestion text
+                    //showProgressDialog(MainActivity.this);
                     retroFetch(suggestion);
                     searchView.setQuery(suggestion, true);
                 }
@@ -242,16 +266,19 @@ public class MainActivity extends AppCompatActivity implements
             e.printStackTrace();
         }
 
+        //initializing
 
         init();
 
 
-        mLocationManager = (LocationManager) getSystemService(this.LOCATION_SERVICE);
+        //initializing location provider to fetch current location
+        mLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .build();
+
 
         mLocationRequest = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
@@ -263,18 +290,24 @@ public class MainActivity extends AppCompatActivity implements
 
 
     private void retroFetch(String location) {
-        ((LinearLayout) currentView.findViewById(R.id.layout_current_climate_no_currentData_layout)).setVisibility(View.GONE);
+        //Get location from api result
+
         daySet.clear();
         apiInterface = ApiClient.getApiClient().create(ApiInterface.class);
         Call<WeatherData> call = apiInterface.getWeather(location, Constants.API_KEY);
         call.enqueue(new Callback<WeatherData>() {
             @Override
             public void onResponse(Call<WeatherData> call, retrofit2.Response<WeatherData> response) {
+                cancelProgressDialog();
                 if (response.isSuccessful()) {
                     weatherData = response.body();
                     if (weatherData != null) {
+
+                        ((LinearLayout) currentView.findViewById(R.id.layout_current_climate_no_currentData_layout)).setVisibility(View.GONE);
+
                         for (rajiv.project.com.weatherdemo.pojo.List day : weatherData.getList()) {
 
+                            //Setting the data to the view
                             String[] dateArray = day.getDtTxt().split(" ");
                             String date = dateArray[0].substring(8, 10);
 
@@ -313,6 +346,8 @@ public class MainActivity extends AppCompatActivity implements
 
                                     daySet.add(date);
 
+                                    //If user select the time based weather will be shown in DetailActivity
+                                    //Time will be of 3 hours
                                     currentView.setOnClickListener(new View.OnClickListener() {
                                         @Override
                                         public void onClick(View view) {
@@ -347,6 +382,9 @@ public class MainActivity extends AppCompatActivity implements
 
             @Override
             public void onFailure(Call<WeatherData> call, Throwable t) {
+                Log.d(TAG, "onFailure: " + t.getLocalizedMessage());
+                t.printStackTrace();
+                cancelProgressDialog();
             }
         });
     }
@@ -368,6 +406,8 @@ public class MainActivity extends AppCompatActivity implements
                 searchView.openSearch();
                 return true;
             case R.id.action_my_location:
+                //check permission
+                //if all permission are accreted then search by current location automatically
                 permissionChecks();
                 break;
         }
@@ -378,6 +418,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onBackPressed() {
         if (searchView.isOpen()) {
+            //close search if user press the backbutton
             searchView.closeSearch();
         } else {
             super.onBackPressed();
@@ -419,59 +460,61 @@ public class MainActivity extends AppCompatActivity implements
 
             }
         } else {
-            setLocation();
+            //setLocation();
+            setLocationRx(this);
         }
     }
 
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        switch (requestCode) {
-            case Constants.REQUEST_CODE_LOCATION: {
-                if (grantResults.length > 0) {
+        if (requestCode == Constants.REQUEST_CODE_LOCATION) {
+            if (grantResults.length > 0) {
 
-                    boolean course_location = grantResults[0] == PackageManager.PERMISSION_GRANTED;
-                    boolean fine_location = grantResults[1] == PackageManager.PERMISSION_GRANTED;
-                    boolean external_file = grantResults[2] == PackageManager.PERMISSION_GRANTED;
+                boolean course_location = grantResults[0] == PackageManager.PERMISSION_GRANTED;
+                boolean fine_location = grantResults[1] == PackageManager.PERMISSION_GRANTED;
+                boolean external_file = grantResults[2] == PackageManager.PERMISSION_GRANTED;
 
-                    SharedPreferences.Editor userPreferenceEditor = getSharedPreferences(Constants.USER_PREF, Context.MODE_PRIVATE).edit();
+                SharedPreferences.Editor userPreferenceEditor = getSharedPreferences(Constants.USER_PREF, Context.MODE_PRIVATE).edit();
 
-                    if (course_location) {
-                        userPreferenceEditor.putBoolean(Constants.PER_COURSE_LOCATION, true);
-                    }
+                if (course_location) {
+                    userPreferenceEditor.putBoolean(Constants.PER_COURSE_LOCATION, true);
+                }
 
-                    if (fine_location) {
-                        userPreferenceEditor.putBoolean(Constants.PER_FINE_LOCATION, true);
-                    }
+                if (fine_location) {
+                    userPreferenceEditor.putBoolean(Constants.PER_FINE_LOCATION, true);
+                }
+
+
+                if (external_file) {
+                    userPreferenceEditor.putBoolean(Constants.PER_EXTERNAL_FILE, true);
+                }
+
+                userPreferenceEditor.apply();
+                userPreferenceEditor.commit();
+
+                if (course_location && fine_location) {
+
+                    //setLocation();
+                    setLocationRx(this);
 
 
                     if (external_file) {
-                        userPreferenceEditor.putBoolean(Constants.PER_EXTERNAL_FILE, true);
+                        Constants.isGranted = true;
                     }
 
-                    userPreferenceEditor.apply();
-                    userPreferenceEditor.commit();
-
-                    if (course_location && fine_location) {
-
-                        setLocation();
-
-                        if (external_file) {
-                            Constants.isGranted = true;
-                        }
-
-                    } else {
-                    }
                 }
+            } else {
+                Log.d(TAG, "grantResults Failed: grantResults.length is less then or equal to 0");
             }
-            default:
-                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
 
-    private void setLocation() {
-
+    @SuppressLint("MissingPermission")
+    private void setLocationOld() {
+        //set latlong for current location based weather results
 
         lastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
         if (lastLocation == null) {
@@ -485,17 +528,20 @@ public class MainActivity extends AppCompatActivity implements
 
             try {
 
+                //get location name by latlong using geocoder
                 Geocoder geocoder = new Geocoder(this, Locale.getDefault());
                 List<Address> addresses = geocoder.getFromLocation(currentLatitude, currentLongitude, 1);
                 String cityName = addresses.get(0).getLocality();
                 String countryName = addresses.get(0).getCountryName();
                 if (cityName != null && countryName != null) {
+                    //seach location based on current location
                     retroFetch(cityName + "," + countryName);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         } else {
+            //if failed to get current location then seach location from the sarchview manually
             ((LinearLayout) currentView.findViewById(R.id.layout_current_climate_no_currentData_layout)).setVisibility(View.VISIBLE);
         }
     }
@@ -526,7 +572,8 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onConnected(Bundle bundle) {
         if (course_location && fine_location) {
-            setLocation();
+            //setLocation();
+            setLocationRx(this);
         }
     }
 
@@ -543,6 +590,7 @@ public class MainActivity extends AppCompatActivity implements
                 e.printStackTrace();
             }
         } else {
+            Log.d(TAG, "onConnectionFailed: ");
         }
     }
 
@@ -560,5 +608,158 @@ public class MainActivity extends AppCompatActivity implements
         super.attachBaseContext(CalligraphyContextWrapper.wrap(newBase));
     }
 
+
+    void setLocationRx(Context context) {
+
+
+        getCurrentLocation(context)
+                .subscribeOn(Schedulers.io())
+                //.observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
+                .subscribe(new SingleObserver<Location>() {
+                               @Override
+                               public void onSubscribe(Disposable d) {
+                                   bag.add(d);
+                               }
+
+                               @Override
+                               public void onSuccess(Location location) {
+                                   Log.d(TAG, "onSuccess: " + location.toString());
+                                   performLocation(location);
+
+                               }
+
+                               @Override
+                               public void onError(Throwable e) {
+                                   e.printStackTrace();
+                                   Log.d(TAG, "onError: ");
+                               }
+                           }
+
+                );
+
+
+    }
+
+    @SuppressLint("MissingPermission")
+    Single<Location> getCurrentLocation(Context context) {
+
+        LocationRequest request = LocationRequest.create() //standard GMS LocationRequest
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                .setNumUpdates(1);
+
+
+        ReactiveLocationProvider locationProvider = new ReactiveLocationProvider(context);
+
+        return locationProvider.getUpdatedLocation(request)
+                .singleOrError();
+               /* .flatMap {
+
+            Log.d(TAG, "Success - flatMap getCurrentLocation: ")
+
+            val dateTime = FunctionalUtils.getCurrentUtcDateTime()
+            val dateTimeFormatted = FunctionalUtils.getCurrentUtcDateTimeFormatted(dateTime)
+
+            val utcFormat = SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.ENGLISH)
+            utcFormat.timeZone = TimeZone.getTimeZone("UTC")
+
+            Log.d(TAG, ":dateTimeFormatted$dateTimeFormatted ");
+
+            val milliseconds = utcFormat.parse(dateTimeFormatted).time
+
+            Log.d(TAG, ":milliseconds $milliseconds");
+
+            Single.just(
+                    makeRequestModel(
+                            angazaId = angazaId,
+                            battery = getBatteryPercentage(context).toString(),
+                            imei = getImei(context),
+                            latitude = it.latitude.toString(),
+                            longitude = it.longitude.toString(),
+                            utcDateTimeMilli = milliseconds,
+                            utcDateTime = dateTimeFormatted,
+                            locationType = it.provider,
+                            accuracy = it.accuracy.toString()
+                    )
+            )
+
+        }.doOnError {
+            Log.d(TAG, "Error - getCurrentLocation: ${it.localizedMessage}")
+        }
+*/
+    }
+
+    void performLocation(Location location) {
+
+        lastLocation = location;
+
+        if (lastLocation != null) {
+
+            currentLatitude = lastLocation.getLatitude();
+            currentLongitude = lastLocation.getLongitude();
+
+            try {
+
+                //get location name by latlong using geocoder
+                Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+                List<Address> addresses = geocoder.getFromLocation(currentLatitude, currentLongitude, 1);
+                String cityName = addresses.get(0).getLocality();
+                String countryName = addresses.get(0).getCountryName();
+                if (cityName != null && countryName != null) {
+                    //seach location based on current location
+                    retroFetch(cityName + "," + countryName);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            //if failed to get current location then search location from the sarchview manually
+            ((LinearLayout) currentView.findViewById(R.id.layout_current_climate_no_currentData_layout)).setVisibility(View.VISIBLE);
+        }
+
+    }
+
+
+    void showProgressDialog(Context context) {
+
+
+        dialog = new Dialog(context);
+        dialog.setContentView(R.layout.progress_dialog);
+
+
+        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+
+        dialog.setCancelable(true);
+        dialog.setCanceledOnTouchOutside(false);
+
+
+        dialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+            @Override
+            public void onCancel(DialogInterface dialogInterface) {
+
+            }
+        });
+
+        if (dialog != null) {
+            if (!dialog.isShowing())
+                dialog.show();
+            else
+                dialog.dismiss();
+        }
+
+    }
+
+    void cancelProgressDialog() {
+        if (dialog != null) {
+            dialog.dismiss();
+        }
+    }
+
+
+    @Override
+    protected void onDestroy() {
+        bag.clear();
+        super.onDestroy();
+    }
 }
 

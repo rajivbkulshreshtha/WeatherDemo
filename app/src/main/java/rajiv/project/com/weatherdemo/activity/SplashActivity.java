@@ -24,8 +24,12 @@ public class SplashActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
 
+        //check for permission
+        //if all granted load splashHandler
+        //else request for the permission
         permissionChecks();
 
+        //if all the permission is granted then load handler
         if (Constants.isGranted) {
             splashHandler();
         }
@@ -33,67 +37,67 @@ public class SplashActivity extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        switch (requestCode) {
-            case Constants.REQUEST_CODE_LOCATION: {
-                if (grantResults.length > 0) {
+        if (requestCode == Constants.REQUEST_CODE_LOCATION) {
+            //if any permission is granted then grantResult will be greater then 0
+            if (grantResults.length > 0) {
 
-                    boolean course_location = grantResults[0] == PackageManager.PERMISSION_GRANTED;
-                    boolean fine_location = grantResults[1] == PackageManager.PERMISSION_GRANTED;
-                    boolean external_file = grantResults[2] == PackageManager.PERMISSION_GRANTED;
+                boolean course_location = grantResults[0] == PackageManager.PERMISSION_GRANTED;
+                boolean fine_location = grantResults[1] == PackageManager.PERMISSION_GRANTED;
+                boolean external_file = grantResults[2] == PackageManager.PERMISSION_GRANTED;
 
-                    SharedPreferences.Editor userPreferenceEditor = getSharedPreferences(Constants.USER_PREF, Context.MODE_PRIVATE).edit();
+                SharedPreferences.Editor userPreferenceEditor = getSharedPreferences(Constants.USER_PREF, Context.MODE_PRIVATE).edit();
 
-                    if (course_location) {
-                        userPreferenceEditor.putBoolean(Constants.PER_COURSE_LOCATION, true);
-                    }
+                if (course_location) {
+                    userPreferenceEditor.putBoolean(Constants.PER_COURSE_LOCATION, true);
+                }
 
-                    if (fine_location) {
-                        userPreferenceEditor.putBoolean(Constants.PER_FINE_LOCATION, true);
-                    }
+                if (fine_location) {
+                    userPreferenceEditor.putBoolean(Constants.PER_FINE_LOCATION, true);
+                }
 
-                    if (external_file) {
-                        userPreferenceEditor.putBoolean(Constants.PER_EXTERNAL_FILE, true);
-                    }
+                if (external_file) {
+                    userPreferenceEditor.putBoolean(Constants.PER_EXTERNAL_FILE, true);
+                }
 
-                    userPreferenceEditor.apply();
-                    userPreferenceEditor.commit();
+                userPreferenceEditor.apply();
+                userPreferenceEditor.commit();
 
-                    if (course_location && fine_location && external_file) {
 
-                        startActivity(new Intent(SplashActivity.this, MainActivity.class));
-                        finish();
-                        Constants.isGranted = true;
-                    } else {
+                if (course_location && fine_location && external_file) {
+                    //if all the permission are accepted then goto mainActivity
+                    startActivity(new Intent(SplashActivity.this, MainActivity.class));
+                    finish();
+                    Constants.isGranted = true;
+                } else {
+                    //else show snackbar for ask again functionality
+                    Snackbar snackbar = Snackbar.make(findViewById(R.id.splashContainer), "Need permission for your location", Snackbar.LENGTH_LONG).setAction("Ask Again", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            permissionChecks();
+                        }
+                    });
+                    snackbar.show();
 
-                        Snackbar snackbar = Snackbar.make(findViewById(R.id.splashContainer), "Need permission for your location", Snackbar.LENGTH_LONG).setAction("Ask Again", new View.OnClickListener() {
-                            @Override
-                            public void onClick(View view) {
-                                permissionChecks();
-                            }
-                        });
-                        snackbar.show();
+                    snackbar.addCallback(new Snackbar.Callback() {
+                        @Override
+                        public void onDismissed(Snackbar transientBottomBar, int event) {
+                            super.onDismissed(transientBottomBar, event);
 
-                        snackbar.addCallback(new Snackbar.Callback() {
-                            @Override
-                            public void onDismissed(Snackbar transientBottomBar, int event) {
-                                super.onDismissed(transientBottomBar, event);
+                            startActivity(new Intent(SplashActivity.this, MainActivity.class));
+                            finish();
 
-                                startActivity(new Intent(SplashActivity.this, MainActivity.class));
-                                finish();
+                        }
+                    });
 
-                            }
-                        });
-
-                    }
                 }
             }
-            default:
-                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
 
     public void permissionChecks() {
+        //check if all permission is granted
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
@@ -118,7 +122,8 @@ public class SplashActivity extends AppCompatActivity {
         }
     }
 
-
+    //after SPLASH_DISPLAY_LENGTH ie. 3 second
+    //will goto MainActivity
     private void splashHandler() {
 
         new Handler().postDelayed(new Runnable() {

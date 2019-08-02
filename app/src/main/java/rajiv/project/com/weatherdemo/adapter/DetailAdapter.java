@@ -100,7 +100,6 @@ public class DetailAdapter extends RecyclerView.Adapter<DetailAdapter.DetailView
             lowestTempTextView = (TextView) view.findViewById(R.id.adapter_detail_lowest_temp);
             windTextView = (TextView) view.findViewById(R.id.adapter_detail_wind_speed);
             humidTextView = (TextView) view.findViewById(R.id.adapter_detail_humid);
-
             imageView = (ImageView) view.findViewById(R.id.adapter_detail_imageView);
 
         }
